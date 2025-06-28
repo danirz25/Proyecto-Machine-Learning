@@ -10,19 +10,6 @@ df['columna_3'] = df['columna_1'] + df['columna_2']
 print(df)
 
 
-"""
-
-    # Curva ROC
-    fpr, tpr, _ = roc_curve(y_true, y_prob) #falsos + reales positivos
-    plt.plot(fpr, tpr, label=f'AUC = {auc:.4f}') #curva de modelo 
-    plt.plot([0, 1], [0, 1], linestyle='--') #linea xd
-    plt.xlabel('Falsos positivos')
-    plt.ylabel('Reales positivos')
-    plt.title('Curva ROC')
-    plt.legend()
-    plt.grid(True)
-    plt.show() #ploteo de grafica
-"""
 
 
 

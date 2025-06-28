@@ -46,7 +46,7 @@ image_datasets = {
     'test': datasets.ImageFolder(os.path.join(data_dir, 'test'), transform=transform['val'])  # Misma transformación que val
 }
 
-#dataloadre
+#dataloader
 #Creacion de lotes de datos para train y val
 dataloaders = {   
     phase: DataLoader(image_datasets[phase], batch_size=32, shuffle=True) #Lotes de 32 batch y aleatorios en c. epoca
@@ -134,7 +134,16 @@ def evaluate_model(model, dataloader):
     print(f"\n Precision: {acc:.4f} | F1 Score: {f1:.4f} | AUC: {auc:.4f}") 
 
 #Acá va a ir las gráficas para medir las métricas y exitos 
-
+    # Curva ROC
+    fpr, tpr, _ = roc_curve(y_true, y_prob) #falsos + reales positivos
+    plt.plot(fpr, tpr, label=f'AUC = {auc:.4f}') #curva de modelo 
+    plt.plot([0, 1], [0, 1], linestyle='--') #linea xd
+    plt.xlabel('Falsos positivos')
+    plt.ylabel('Reales positivos')
+    plt.title('Curva ROC')
+    plt.legend() #Leyenda como rango
+    plt.grid(True) #Activa la cuadrícula
+    plt.show() #ploteo de grafica
 
 #Execuxion de los datos de prueba una vez acabado el entrenamiento
 if __name__ == "__main__": #Solo se ejecuta si lo corro directamente 
