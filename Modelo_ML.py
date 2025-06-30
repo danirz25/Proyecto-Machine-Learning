@@ -13,8 +13,8 @@ from torchvision import datasets, transforms, models
 from torch.utils.data import DataLoader
 #Para las metricas
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, roc_curve # type: ignore
-from sklearn.metrics import confusion_matrix 
-import seaborn as sns # type: ignore
+from sklearn.metrics import confusion_matrix # type: ignore
+import seaborn as sns 
 #para las rutas
 import os
 
@@ -139,7 +139,7 @@ def evaluate_model(model, dataloader):
     auc = roc_auc_score(y_true, y_prob) #ROC
 
     print(f"\n Precision: {acc:.4f} | F1 Score: {f1:.4f} | AUC: {auc:.4f}") 
-    
+
     # Matriz de confusión
     cm = confusion_matrix(y_true, y_pred)
     labels = ['NORMAL', 'NEUMONIA']
