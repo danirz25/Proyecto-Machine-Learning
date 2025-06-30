@@ -13,6 +13,8 @@ from torchvision import datasets, transforms, models
 from torch.utils.data import DataLoader
 #Para las metricas
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, roc_curve # type: ignore
+from sklearn.metrics import confusion_matrix 
+import seaborn as sns # type: ignore
 #para las rutas
 import os
 
@@ -25,15 +27,20 @@ data_dir = "D:/Escuela/Pro_Delfin/archive/chest_xray"
 #Transformar las imágenes a 224x224 y normalización
 #DenseNet trabaja con imágenes 224x224.
 # dos conjuntos de transformacion: train y val  
+
 transform = {
     'train': transforms.Compose([
-        transforms.Resize((224, 224)), #redimension 
+       # transforms.Resize((224, 224)), #redimension                                      VERSION 1
+        transforms.Resize(256),  # reduce el lado más largo a 256 manteniendo proporción  VERSION 2
+        transforms.CenterCrop(224),  # recorta el centro a 224x224                        VERSION 2
         transforms.RandomHorizontalFlip(),  # aumento de datos
         transforms.ToTensor(), #convierte en tensor
         transforms.Normalize([0.485], [0.229])  # normalizacion de un canal
     ]),
     'val': transforms.Compose([
-        transforms.Resize((224, 224)), #Lo mismo que arriba xd
+       #transforms.Resize((224, 224)), #Lo mismo que arriba xd                             VERSION 1
+        transforms.Resize(256), #Lo mismo de arriba                                         VERSION 2
+        transforms.CenterCrop(224),                                                        #VERSION 2
         transforms.ToTensor(),
         transforms.Normalize([0.485], [0.229])
     ]),
@@ -132,6 +139,18 @@ def evaluate_model(model, dataloader):
     auc = roc_auc_score(y_true, y_prob) #ROC
 
     print(f"\n Precision: {acc:.4f} | F1 Score: {f1:.4f} | AUC: {auc:.4f}") 
+    
+    # Matriz de confusión
+    cm = confusion_matrix(y_true, y_pred)
+    labels = ['NORMAL', 'NEUMONIA']
+
+    plt.figure(figsize=(6, 5))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=labels, yticklabels=labels)
+    plt.xlabel('Predicción')
+    plt.ylabel('Valor real')
+    plt.title('Matriz de Confusión')
+    plt.show()
 
 #Acá va a ir las gráficas para medir las métricas y exitos 
     # Curva ROC
@@ -153,7 +172,14 @@ if __name__ == "__main__": #Solo se ejecuta si lo corro directamente
 
 
 
+#No olvidar para GIT
 
+"""
+git status
+git add . 
+git commit -m "texto xd"
+git push origin main
+"""
 
 
 
