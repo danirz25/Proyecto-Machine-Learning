@@ -84,6 +84,11 @@ criterion = nn.BCEWithLogitsLoss()
 #Si se sube el momentum baja el lr para compensar y equilibrar
 optimizer = optim.SGD(model.parameters(), lr=0.01, momentum = 0.9) 
 
+# Listas para graficar luego
+total_train_loss, total_val_loss = [], []
+total_train_acc, total_val_acc = [], []
+
+
 #Para poder entrenar el modelo
 #Funcion de entrenamiento del modelo, con 5 epochs o epocas
 def train_model(model, criterion, optimizer, dataloaders, dataset_sizes, num_epochs=5):
@@ -98,7 +103,6 @@ def train_model(model, criterion, optimizer, dataloaders, dataset_sizes, num_epo
             for inputs, labels in dataloaders[phase]:
                 inputs = inputs.to(device) #Mover imagenes al GPU / CPU
                 labels = labels.to(device).float().unsqueeze(1)  # Convertir batch a batch,1
-
                 optimizer.zero_grad() #Limpia gradientes acumuladosh
 
                 with torch.set_grad_enabled(phase == 'train'): #Calcula gradientes
@@ -117,21 +121,48 @@ def train_model(model, criterion, optimizer, dataloaders, dataset_sizes, num_epo
             epoch_acc = running_corrects.double() / dataset_sizes[phase] #precision promedio
             print(f"{phase.capitalize()} - Perdida: {epoch_loss:.4f}, Precision: {epoch_acc:.4f}") #se imprimen las metricas obtenidas
 
+            if phase == 'train':
+                total_train_loss.append(epoch_loss)
+                total_train_acc.append(epoch_acc.cpu().item())
+            else:
+                total_val_loss.append(epoch_loss)
+                total_val_acc.append(epoch_acc.cpu().item())
+
+    # Graficar perdidas y precision por epoca
+    epochs = range(1, num_epochs+1)
+    plt.figure(figsize=(12,5))
+    plt.subplot(1,2,1)
+    plt.plot(epochs, total_train_loss, label='Train Loss')
+    plt.plot(epochs, total_val_loss, label='Val Loss')
+    plt.xlabel('Época')
+    plt.ylabel('Pérdida')
+    plt.title('Pérdida por época')
+    plt.legend()
+
+    plt.subplot(1,2,2)
+    plt.plot(epochs, total_train_acc, label='Train Acc')
+    plt.plot(epochs, total_val_acc, label='Val Acc')
+    plt.xlabel('Época')
+    plt.ylabel('Precisión')
+    plt.title('Precisión por época')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
 #Evaluar el modelo con metricas
 #Tmb evalua con curva ROC
 def evaluate_model(model, dataloader): 
     model.eval()
-    all_labels = []  #etiquetas 
-    all_probs = []  #probabilidades 
+    all_labels, all_probs, all_inputs = [], [], []
 
     with torch.no_grad():  #sin gradientes, sin entrenar 
         for inputs, labels in dataloader:
             inputs = inputs.to(device)  #mover imgs a cpu o gpu 
             labels = labels.to(device).float().unsqueeze(1) #loo mismo de arriba 
-
             outputs = model(inputs)
             probs = torch.sigmoid(outputs) #probabilidades de 0 a 1
 
+            all_inputs.extend(inputs.cpu())
             all_labels.extend(labels.cpu().numpy()) #etiquetas en cpu
             all_probs.extend(probs.cpu().numpy()) #probabs en cpu
 
@@ -152,8 +183,7 @@ def evaluate_model(model, dataloader):
     labels = ['NORMAL', 'NEUMONIA']
 
     plt.figure(figsize=(6, 5))
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-            xticklabels=labels, yticklabels=labels)
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=labels, yticklabels=labels)
     plt.xlabel('Predicción')
     plt.ylabel('Valor real')
     plt.title('Matriz de Confusión')
@@ -170,6 +200,20 @@ def evaluate_model(model, dataloader):
     plt.legend() #Leyenda como rango
     plt.grid(True) #Activa la cuadrícula
     plt.show() #ploteo de grafica
+
+    # Esto es para mostrar imagenes de cuando el modelo detecta neumonia
+    fig, axs = plt.subplots(2, 2, figsize=(8, 8))
+    idx = 0
+    for i in range(len(y_pred)):
+        if y_pred[i] == 1 and idx < 4:
+            img = all_inputs[i].squeeze().numpy()
+            axs[idx // 2, idx % 2].imshow(img[0] if img.ndim == 3 else img, cmap='gray')
+            axs[idx // 2, idx % 2].set_title(f"Pred: NEUMONIA | Real: {'NEUMONIA' if y_true[i] == 1 else 'NORMAL'}")
+            axs[idx // 2, idx % 2].axis('off')
+            idx += 1
+    plt.tight_layout()
+    plt.show()
+
 
 #Execuxion de los datos de prueba una vez acabado el entrenamiento
 if __name__ == "__main__": #Solo se ejecuta si lo corro directamente 
