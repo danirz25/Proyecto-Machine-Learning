@@ -31,8 +31,15 @@ data_dir = "D:/Escuela/Pro_Delfin/archive/chest_xray"
 transform = {
     'train': transforms.Compose([
        # transforms.Resize((224, 224)), #redimension                                      VERSION 1
-        transforms.Resize(256),  # reduce el lado más largo a 256 manteniendo proporción  VERSION 2
-        transforms.CenterCrop(224),  # recorta el centro a 224x224                        VERSION 2
+
+       # transforms.Resize(256),  # reduce el lado más largo a 256 manteniendo proporción  VERSION 2
+       # transforms.CenterCrop(224),  # recorta el centro a 224x224                        VERSION 2
+
+        transforms.RandomRotation(10),           # Gira ligeramente la imagen               VERSION 3
+        transforms.RandomResizedCrop(224),       # Recorte aleatorio (más flexible que CenterCrop) VERSION3
+        transforms.ColorJitter(brightness=0.1),  # Cambios de brillo (simula diferentes exposiciones) VERSION 3
+
+
         transforms.RandomHorizontalFlip(),  # aumento de datos
         transforms.ToTensor(), #convierte en tensor
         transforms.Normalize([0.485], [0.229])  # normalizacion de un canal
@@ -97,7 +104,7 @@ def train_model(model, criterion, optimizer, dataloaders, dataset_sizes, num_epo
                 with torch.set_grad_enabled(phase == 'train'): #Calcula gradientes
                     outputs = model(inputs)  #Prediccion del modelo
                     loss = criterion(outputs, labels) #Calcula la perdida 
-                    preds = (torch.sigmoid(outputs) > 0.5).float()  #Logits a 0 o 1, o sea, clasif binaria
+                    preds = (torch.sigmoid(outputs) > 0.5).float()  #Logits a 0 o 1, o sea, clasif binaria  umbral de 0.5
 
                     if phase == 'train':
                         loss.backward() #backpropragation (ajuste de parametros)
