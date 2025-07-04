@@ -35,9 +35,9 @@ transform = {
        # transforms.Resize(256),  # reduce el lado más largo a 256 manteniendo proporción  VERSION 2
        # transforms.CenterCrop(224),  # recorta el centro a 224x224                        VERSION 2
 
-        transforms.RandomRotation(10),           # Gira ligeramente la imagen               VERSION 3
-        transforms.RandomResizedCrop(224),       # Recorte aleatorio (más flexible que CenterCrop) VERSION3
-        transforms.ColorJitter(brightness=0.1),  # Cambios de brillo (simula diferentes exposiciones) VERSION 3
+        transforms.RandomRotation(10),           # Gira poquito la imagen                   VERSION 3
+        transforms.RandomResizedCrop(224),       # Recorte aleatorio                        VERSION3
+        transforms.ColorJitter(brightness=0.1),  # Cambios de brillo                        VERSION 3
 
 
         transforms.RandomHorizontalFlip(),  # aumento de datos
