@@ -17,6 +17,7 @@ from sklearn.metrics import confusion_matrix # type: ignore
 import seaborn as sns 
 #para las rutas
 import os
+from sklearn.decomposition import PCA
 
 #Define si los calculos se hacen en CPU o GPU
 device =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -75,6 +76,9 @@ num_features = model.classifier.in_features #Obtiene el Num de entradas de la ca
 model.classifier = nn.Linear(num_features, 1)  # salida binaria 
 model = model.to(device) #Mueve a CPU o GPU dependiendo disponibilidad
 
+# Extraer capa de embeddings
+feature_extractor = nn.Sequential(*(list(model.children())[:-1]))
+
 #Funcipn de perdida
 criterion = nn.BCEWithLogitsLoss()
 
@@ -82,7 +86,9 @@ criterion = nn.BCEWithLogitsLoss()
 #taza de aprendizaje  = 0.01
 # momentum = 0.9
 #Si se sube el momentum baja el lr para compensar y equilibrar
-optimizer = optim.SGD(model.parameters(), lr=0.01, momentum = 0.9) 
+
+# optimizer = optim.SGD(model.parameters(), lr=0.01, momentum = 0.9)    #Optimizador version 1
+optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-4)   #Optimizador v 2
 
 # Listas para graficar luego
 total_train_loss, total_val_loss = [], []
@@ -153,10 +159,24 @@ def train_model(model, criterion, optimizer, dataloaders, dataset_sizes, num_epo
 #Tmb evalua con curva ROC
 def evaluate_model(model, dataloader): 
     model.eval()
-    all_labels, all_probs, all_inputs = [], [], []
+    all_labels, all_probs, all_inputs, all_embeddings = [], [], [], []
 
     with torch.no_grad():  #sin gradientes, sin entrenar 
         for inputs, labels in dataloader:
+            inputs = inputs.to(device)
+            labels = labels.to(device).float().unsqueeze(1)
+
+            features = model.features(inputs)
+            pooled = nn.functional.adaptive_avg_pool2d(features, (1, 1)).view(inputs.size(0), -1)
+            outputs = model.classifier(pooled)
+            probs = torch.sigmoid(outputs)
+
+            all_embeddings.extend(pooled.cpu().numpy())
+            all_inputs.extend(inputs.cpu())
+            all_labels.extend(labels.cpu().numpy())
+            all_probs.extend(probs.cpu().numpy())
+
+            """
             inputs = inputs.to(device)  #mover imgs a cpu o gpu 
             labels = labels.to(device).float().unsqueeze(1) #loo mismo de arriba 
             outputs = model(inputs)
@@ -165,7 +185,7 @@ def evaluate_model(model, dataloader):
             all_inputs.extend(inputs.cpu())
             all_labels.extend(labels.cpu().numpy()) #etiquetas en cpu
             all_probs.extend(probs.cpu().numpy()) #probabs en cpu
-
+            """
     #preparacion de arrays para metricas
     y_true = np.array(all_labels).flatten() #etiquetas
     y_prob = np.array(all_probs).flatten() #probabs
@@ -214,6 +234,17 @@ def evaluate_model(model, dataloader):
     plt.tight_layout()
     plt.show()
 
+# Visualización de embeddings en 2D
+    pca = PCA(n_components=2)
+    emb_2d = pca.fit_transform(all_embeddings)
+    plt.figure(figsize=(8,6))
+    plt.scatter(emb_2d[:,0], emb_2d[:,1], c=y_true, cmap='coolwarm', alpha=0.6)
+    plt.colorbar(label='Clase (0=NORMAL, 1=NEUMONIA)')
+    plt.title('Visualización PCA de Embeddings')
+    plt.xlabel('Componente Principal 1')
+    plt.ylabel('Componente Principal 2')
+    plt.grid(True)
+    plt.show()
 
 #Execuxion de los datos de prueba una vez acabado el entrenamiento
 if __name__ == "__main__": #Solo se ejecuta si lo corro directamente 
