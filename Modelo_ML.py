@@ -2,6 +2,7 @@
 #Daniel Patiño Ruiz
 
 #Libraries de Pytorch
+import cv2
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -87,8 +88,8 @@ criterion = nn.BCEWithLogitsLoss()
 # momentum = 0.9
 #Si se sube el momentum baja el lr para compensar y equilibrar
 
-# optimizer = optim.SGD(model.parameters(), lr=0.01, momentum = 0.9)    #Optimizador version 1
-optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-4)   #Optimizador v 2
+optimizer = optim.SGD(model.parameters(), lr=0.01, momentum = 0.9)    #Optimizador version 1
+# optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=1e-4)   #Optimizador v 2
 
 # Listas para graficar luego
 total_train_loss, total_val_loss = [], []
@@ -163,29 +164,19 @@ def evaluate_model(model, dataloader):
 
     with torch.no_grad():  #sin gradientes, sin entrenar 
         for inputs, labels in dataloader:
-            inputs = inputs.to(device)
-            labels = labels.to(device).float().unsqueeze(1)
+            inputs = inputs.to(device) #mover imgs a cpu o gpu 
+            labels = labels.to(device).float().unsqueeze(1) #loo mismo de arriba 
 
             features = model.features(inputs)
             pooled = nn.functional.adaptive_avg_pool2d(features, (1, 1)).view(inputs.size(0), -1)
             outputs = model.classifier(pooled)
-            probs = torch.sigmoid(outputs)
+            probs = torch.sigmoid(outputs) #probabilidades de 0 a 1
 
             all_embeddings.extend(pooled.cpu().numpy())
             all_inputs.extend(inputs.cpu())
-            all_labels.extend(labels.cpu().numpy())
-            all_probs.extend(probs.cpu().numpy())
-
-            """
-            inputs = inputs.to(device)  #mover imgs a cpu o gpu 
-            labels = labels.to(device).float().unsqueeze(1) #loo mismo de arriba 
-            outputs = model(inputs)
-            probs = torch.sigmoid(outputs) #probabilidades de 0 a 1
-
-            all_inputs.extend(inputs.cpu())
             all_labels.extend(labels.cpu().numpy()) #etiquetas en cpu
             all_probs.extend(probs.cpu().numpy()) #probabs en cpu
-            """
+
     #preparacion de arrays para metricas
     y_true = np.array(all_labels).flatten() #etiquetas
     y_prob = np.array(all_probs).flatten() #probabs
@@ -236,7 +227,8 @@ def evaluate_model(model, dataloader):
 
 # Visualización de embeddings en 2D
     pca = PCA(n_components=2)
-    emb_2d = pca.fit_transform(all_embeddings)
+    print(f"Se generaron {len(all_embeddings)} embeddings.") 
+    emb_2d = pca.fit_transform(all_embeddings) 
     plt.figure(figsize=(8,6))
     plt.scatter(emb_2d[:,0], emb_2d[:,1], c=y_true, cmap='coolwarm', alpha=0.6)
     plt.colorbar(label='Clase (0=NORMAL, 1=NEUMONIA)')
